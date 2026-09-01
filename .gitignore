@@ -7,5 +7,4 @@ package-lock.json
 /apps-script/
 
 # 로컬 개발/테스트 하네스 — 배포에 필요 없습니다.
-# 저장소에서 제외하려면 아래 한 줄의 주석만 해제하세요.
-# _local/
+/_local/
