@@ -91,5 +91,17 @@ export function pickFile(accept = '*/*') {
   });
 }
 
+/** 여러 파일 선택. 드롭과 같은 경로로 처리하기 위해 항상 배열을 돌려준다. */
+export function pickFiles(accept = '*/*') {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = accept;
+    input.multiple = true;
+    input.onchange = () => resolve([...(input.files || [])]);
+    input.click();
+  });
+}
+
 export const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 export const pct = (n, total) => (total ? Math.round((n / total) * 100) : 0);

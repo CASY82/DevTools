@@ -1,4 +1,5 @@
 /** 도메인 스키마 · 상수 정의 (계획서 4·6·7장). */
+import { MAX_UPLOAD_MB } from '../config.js';
 
 export const TABLES = {
   projects: 'projects',
@@ -61,6 +62,7 @@ export const EVENTS = {
   TASK_UPDATED: 'Task 변경',
   TASK_DELETED: 'Task 삭제',
   ASSET_CREATED: '에셋 등록',
+  ASSET_UPLOAD: '파일 업로드',
   ASSET_CHECKOUT: '체크아웃',
   ASSET_CHECKIN: '체크인',
   ASSET_UNLOCK: '락 해제',
@@ -74,6 +76,22 @@ export const EVENTS = {
 export const BINARY_EXT = ['psd', 'blend', 'fbx', 'obj', 'wav', 'mp3', 'mp4', 'png', 'jpg', 'jpeg', 'tga', 'exr', 'unity', 'prefab', 'uasset'];
 
 export const isBinaryAsset = (name) => BINARY_EXT.includes(String(name).split('.').pop()?.toLowerCase());
+
+/** 미리보기(썸네일)를 만들 수 있는 확장자. */
+export const IMAGE_EXT = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'];
+
+export const isImageAsset = (name) => IMAGE_EXT.includes(String(name).split('.').pop()?.toLowerCase());
+
+/**
+ * Drive 썸네일 URL. Drive 파일에 접근 권한이 있는 계정으로 로그인한 브라우저에서만 보인다.
+ * (파일 원본을 앱이 저장하지 않으므로 미리보기도 Drive에서 직접 가져온다)
+ */
+export const thumbUrl = (driveFileId, width = 400) =>
+  (driveFileId ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(driveFileId)}&sz=w${width}` : '');
+
+/** 업로드 상한(바이트). 설정 출처는 config.js 한 곳. */
+export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+export { MAX_UPLOAD_MB };
 
 const metaOf = (list, id, fallbackTone = 'gray') =>
   list.find((s) => s.id === id) || { id, label: id || '-', tone: fallbackTone };

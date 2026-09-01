@@ -1,6 +1,7 @@
 import { $, on, render, html, formData, esc } from './core/dom.js';
 import { debounce, relTime, fmtDate } from './core/util.js';
 import { settings, saveSettings } from './core/store.js';
+import { DEFAULT_GAS_ENDPOINT } from './config.js';
 import { restoreSession, login, register, bootstrapAdmin, logout } from './core/auth.js';
 import { Router } from './core/router.js';
 import { toast, toastError } from './core/ui.js';
@@ -110,7 +111,7 @@ function bindAuth() {
     e.preventDefault();
     const form = e.target;
     const values = formData(form);
-    saveSettings({ gasEndpoint: values.endpoint.trim() });
+    if (values.endpoint) saveSettings({ gasEndpoint: values.endpoint.trim() });
     setAuthMessage('처리 중…');
     try {
       if (form.dataset.auth === 'login') { await login(values.id.trim(), values.password); await bootApp(); }
@@ -129,7 +130,10 @@ function bindAuth() {
 function showAuth(mode = 'login', message = '', tone = '') {
   $('#app').hidden = true;
   const endpoint = settings.gasEndpoint || '';
-  const common = html`<label class="field"><span>Apps Script URL</span><input name="endpoint" type="url" required value="${endpoint}" placeholder="https://script.google.com/macros/s/.../exec"></label>`;
+  // 배포본에 URL이 박혀 있으면(config.js) 매번 붙여넣지 않는다. 없을 때만 입력칸을 보여준다.
+  const common = DEFAULT_GAS_ENDPOINT
+    ? ''
+    : html`<label class="field"><span>Apps Script URL</span><input name="endpoint" type="url" required value="${endpoint}" placeholder="https://script.google.com/macros/s/.../exec"></label>`;
   const account = html`<label class="field"><span>아이디</span><input name="id" required minlength="4" maxlength="32" autocomplete="username"></label>
     <label class="field"><span>패스워드</span><input name="password" type="password" required minlength="8" autocomplete="${mode === 'login' ? 'current-password' : 'new-password'}"></label>`;
   const profile = html`<label class="field"><span>이름</span><input name="name" required maxlength="50"></label><label class="field"><span>이메일</span><input name="email" type="email" required maxlength="120"></label>`;
@@ -281,6 +285,31 @@ function bindChrome() {
     const fn = current.view.submits?.[el.dataset.submit];
     if (fn) Promise.resolve(fn(ctx, formData(el), el)).catch(toastError);
   });
+
+  // 파일 드롭: 뷰가 drops 맵에 선언한 영역(data-drop)에서만 받는다.
+  const dropTarget = (el) => current.view.drops?.[el.dataset.drop];
+  on(viewRoot, 'dragover', '[data-drop]', (e, el) => {
+    if (!dropTarget(el)) return;
+    e.preventDefault();                       // 이게 있어야 drop 이벤트가 발생한다
+    el.classList.add('drag-over');
+  });
+  on(viewRoot, 'dragleave', '[data-drop]', (e, el) => {
+    if (!el.contains(e.relatedTarget)) el.classList.remove('drag-over');
+  });
+  on(viewRoot, 'drop', '[data-drop]', (e, el) => {
+    const fn = dropTarget(el);
+    if (!fn) return;
+    e.preventDefault();
+    el.classList.remove('drag-over');
+    const files = [...(e.dataTransfer?.files || [])];
+    if (files.length) Promise.resolve(fn(ctx, files, el)).catch(toastError);
+  });
+  // 드롭존 밖에 떨어뜨린 파일로 브라우저가 페이지를 떠나 작업이 날아가는 것을 막는다.
+  // 보드 카드 드래그(파일이 아님)는 그대로 두어야 하므로 파일 드래그만 막는다.
+  const isFileDrag = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+  for (const type of ['dragover', 'drop']) {
+    window.addEventListener(type, (e) => { if (isFileDrag(e)) e.preventDefault(); });
+  }
 
   $('#project-picker').addEventListener('change', (e) => setProject(e.target.value));
   $('#actor-picker').addEventListener('change', (e) => { saveSettings({ actorId: e.target.value }); renderView(); });

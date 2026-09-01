@@ -1,6 +1,6 @@
 import { html } from '../core/dom.js';
 import { fmtDate, relTime } from '../core/util.js';
-import { isBinaryAsset } from '../domain/schema.js';
+import { isBinaryAsset, isImageAsset, thumbUrl } from '../domain/schema.js';
 import { lockChip, chip, who, taskLink, empty, taskOptions } from './components.js';
 import { checkinDialog } from './dialogs.js';
 import { withToast, openForm } from '../core/ui.js';
@@ -48,6 +48,11 @@ export default {
       <div class="grid g2">
         <div class="card">
           <h3>메타데이터</h3>
+          ${isImageAsset(a.name) && a.drive_file_id ? html`
+            <!-- 원본은 Drive에만 있으므로 미리보기도 Drive에서 직접 가져온다(접근 권한 있는 계정에서만 보인다). -->
+            <a href="${a.drive_link}" target="_blank" rel="noopener" class="preview">
+              <img src="${thumbUrl(a.drive_file_id, 640)}" alt="${a.name} 미리보기" loading="lazy">
+            </a>` : ''}
           <dl class="kv">
             <dt>경로</dt><dd class="mono">${a.path || '-'}</dd>
             <dt>현재 버전</dt><dd>v${a.current_version}</dd>

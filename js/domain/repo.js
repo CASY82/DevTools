@@ -1,4 +1,5 @@
-import { TABLES, TABLE_LIST, COLUMNS, EVENTS, isBinaryAsset, statusMeta, priorityMeta } from './schema.js';
+import { TABLES, TABLE_LIST, COLUMNS, EVENTS, isBinaryAsset, isImageAsset, statusMeta, priorityMeta,
+  MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from './schema.js';
 import { uid, nowIso, byDesc, byAsc, sha256 } from '../core/util.js';
 import { ConflictError, AdapterError } from '../adapters/base.js';
 import { extractTaskKeys } from '../adapters/github.js';
@@ -358,6 +359,70 @@ export class Repo extends EventTarget {
   }
 
   // ------------------------------------------------------------------- Asset
+  /** 이 저장소가 실제 파일 업로드를 지원하는가(= Drive가 붙어 있는가). */
+  get canUpload() { return typeof this.adapter.uploadAsset === 'function'; }
+
+  /** 전송 한도 검사. Apps Script 요청 본문 한도를 넘으면 응답 자체가 깨지므로 미리 막는다. */
+  #assertFileSize(file) {
+    if (file && file.size > MAX_UPLOAD_BYTES) {
+      throw new AdapterError(`파일이 너무 큽니다(${MAX_UPLOAD_MB}MB 이하). 큰 원본은 Drive에 직접 올리고 링크만 등록하세요.`);
+    }
+  }
+
+  /** 업로드 전 검사. 파일 본문을 브라우저에 보관하지 않으므로 Drive가 없으면 아예 막는다. */
+  #assertUploadable(file) {
+    if (!file) throw new AdapterError('올릴 파일이 없습니다.');
+    if (!this.canUpload) {
+      throw new AdapterError('현재 저장소는 파일 업로드를 지원하지 않습니다. 설정에서 Apps Script 저장소로 전환하세요.');
+    }
+    this.#assertFileSize(file);
+  }
+
+  /**
+   * 파일을 바로 Drive에 올려 에셋을 새로 만든다(드래그&드롭 경로).
+   *
+   * 체크아웃/체크인을 거치지 않는 대신 v1 을 그 자리에서 남기고 락은 AVAILABLE 로 둔다.
+   * 업로드가 실패하면 행을 만들지 않으려고 업로드를 먼저 하고 그다음에 기록한다.
+   */
+  async uploadNewAsset(projectId, file, { taskId = '', path = '', comment = '', actorId = '' } = {}) {
+    this.#assertUploadable(file);
+    const name = file.name;
+    if (this.assets(projectId).some((a) => a.name === name)) {
+      throw new ConflictError(`같은 이름의 에셋이 이미 있습니다: ${name}. 새 버전은 체크아웃 후 체크인으로 올리세요.`);
+    }
+
+    const hash = await sha256(await file.arrayBuffer());
+    const up = await this.adapter.uploadAsset(file, { name, comment });
+
+    const assetRow = {
+      id: uid('ast'),
+      project_id: projectId,
+      task_id: taskId || '',
+      name,
+      path: path || '',
+      drive_file_id: up.fileId || '',
+      drive_link: up.webViewLink || '',
+      current_version: 1,
+      hash,
+      lock_status: 'AVAILABLE',
+      locked_by: '',
+      locked_at: '',
+      updated_at: nowIso(),
+    };
+    await this.#insert(TABLES.assets, assetRow);
+    await this.#insert(TABLES.assetVersions, {
+      id: uid('ver'), asset_id: assetRow.id, version_no: 1,
+      drive_revision_id: up.revisionId || '', author_id: actorId, hash,
+      comment: comment || 'v1 업로드', created_at: nowIso(),
+    });
+    await this.log({
+      project_id: projectId, task_id: assetRow.task_id, actor_id: actorId, source: 'drive',
+      event_type: 'ASSET_UPLOAD', message: `${name} 업로드 (v1)`,
+    });
+    this.#emit();
+    return assetRow;
+  }
+
   async createAsset(projectId, input, actorId = '') {
     const row = {
       id: uid('ast'),
@@ -432,8 +497,10 @@ export class Repo extends EventTarget {
     let driveLink = asset.drive_link;
 
     if (file) {
+      // 로컬 어댑터는 업로드가 없어 해시만 남는다(파일 본문은 어디에도 저장하지 않는다).
+      this.#assertFileSize(file);
       hash = await sha256(await file.arrayBuffer());
-      if (typeof this.adapter.uploadAsset === 'function') {
+      if (this.canUpload) {
         const up = await this.adapter.uploadAsset(file, { assetId, name: asset.name, comment });
         driveFileId = up.fileId || driveFileId;
         driveRevision = up.revisionId || '';
@@ -490,6 +557,8 @@ export class Repo extends EventTarget {
   }
 
   isBinary(asset) { return isBinaryAsset(asset?.name); }
+
+  isImage(asset) { return isImageAsset(asset?.name); }
 
   // --------------------------------------------------------------------- Git
   async addGitLink(projectId, input, actorId = '') {

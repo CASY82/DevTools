@@ -10,11 +10,11 @@ export class GasAdapter {
   static id = 'gas';
   static label = 'Google Sheets (Apps Script)';
 
-  constructor({ endpoint, token = '', session = '' } = {}) {
+  constructor({ endpoint, session = '' } = {}) {
     this.id = GasAdapter.id;
     this.label = GasAdapter.label;
     this.endpoint = (endpoint || '').trim();
-    this.token = (token || '').trim();
+    // 인증은 로그인으로 발급된 세션 토큰 하나로 한다(Code.gs requireSession).
     this.session = (session || '').trim();
     this.remote = true;
   }
@@ -31,7 +31,7 @@ export class GasAdapter {
       res = await fetch(this.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action, session: this.session, token: this.token, ...payload }),
+        body: JSON.stringify({ action, session: this.session, ...payload }),
         redirect: 'follow',
       });
     } catch (e) {
@@ -56,7 +56,10 @@ export class GasAdapter {
   async remove(table, id) { await this.#call('remove', { table, id }); }
   async replaceAll(table, rows) { await this.#call('replaceAll', { table, rows }); }
 
-  /** Drive 업로드(선택 기능). 파일을 base64로 전송한다. */
+  /**
+   * Drive 업로드(선택 기능). 파일을 base64로 전송한다.
+   * Drive 파일명은 에셋 이름(meta.name)을 우선한다 — 같은 이름이어야 리비전으로 누적된다.
+   */
   async uploadAsset(file, meta) {
     const data = await new Promise((resolve, reject) => {
       const fr = new FileReader();
@@ -65,7 +68,7 @@ export class GasAdapter {
       fr.readAsDataURL(file);
     });
     return (await this.#call('upload', {
-      name: file.name, mimeType: file.type || 'application/octet-stream', data, meta,
+      name: meta?.name || file.name, mimeType: file.type || 'application/octet-stream', data, meta,
     })).file;
   }
 }

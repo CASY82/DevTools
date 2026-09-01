@@ -184,6 +184,17 @@ tbody tr.clickable:hover{background:var(--panel2)}
 }
 .tabs button.active{color:#fff;border-bottom-color:var(--accent)}
 .callout{border:1px solid var(--line2);background:#101a2d;border-radius:var(--r-md);padding:14px 16px;font-size:13.5px;color:#dbe8ff}
+/* 파일 드롭 업로드 영역 (에셋 화면) */
+.dropzone{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:16px;padding:22px;
+  text-align:center;border:1.5px dashed var(--line2);border-radius:var(--r-lg);background:var(--panel);transition:border-color .15s,background .15s}
+.dropzone.drag-over{border-color:var(--accent);background:#101a2d}
+.dropzone *{pointer-events:none}
+.dropzone .btn{pointer-events:auto}
+.dropzone p{margin:0}
+.dz-title{font-weight:600}
+img.thumb{width:36px;height:36px;object-fit:cover;border-radius:var(--r-sm);border:1px solid var(--line);background:#0b1120;flex:none}
+.preview{display:block;margin-bottom:14px}
+.preview img{width:100%;max-height:320px;object-fit:contain;border:1px solid var(--line);border-radius:var(--r-md);background:#0b1120}
 .callout[data-tone=warn]{border-color:#6b5a2a;background:#1d1a10}
 .timeline{list-style:none;margin:0;padding:0}
 .timeline li{border-left:2px solid var(--line);padding:0 0 14px 16px;position:relative}

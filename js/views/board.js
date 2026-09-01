@@ -5,6 +5,9 @@ import { avatar, priorityChip, empty, pageHead, option } from './components.js';
 import { newTaskDialog } from './dialogs.js';
 import { toastError } from '../core/ui.js';
 
+/** 드래그 리스너를 이미 붙인 root. #view 는 재렌더에도 그대로라 중복 등록을 막아야 한다. */
+const BOUND = new WeakSet();
+
 /** 상태별 칸반 보드. 드래그&드롭으로 상태를 바꾸면 변경 로그가 남는다. */
 export default {
   title: '보드',
@@ -64,8 +67,14 @@ export default {
     assignee: (ctx, el) => ctx.setQuery({ assignee: el.value || null }),
   },
 
-  /** HTML5 드래그&드롭. 뷰가 다시 그려질 때마다 새 DOM에 다시 붙는다. */
+  /**
+   * HTML5 드래그&드롭.
+   * root(#view)는 재렌더에도 살아남으므로 리스너는 root마다 한 번만 붙인다.
+   * 매번 붙이면 리스너가 쌓이고, 다른 화면의 드롭(에셋 파일 드롭 등)까지 이 핸들러가 받는다.
+   */
   mount(ctx, root) {
+    if (BOUND.has(root)) return;
+    BOUND.add(root);
     let dragging = null;
 
     root.addEventListener('dragstart', (e) => {
@@ -94,8 +103,9 @@ export default {
 
     root.addEventListener('drop', async (e) => {
       const col = e.target.closest('.col');
-      const taskId = dragging || e.dataTransfer.getData('text/plain');
-      if (!col || !taskId) return;
+      if (!col) return;                                   // 보드 밖(다른 화면)의 드롭은 건드리지 않는다
+      const taskId = dragging || e.dataTransfer?.getData('text/plain');
+      if (!taskId) return;
       e.preventDefault();
       col.classList.remove('drop');
       const status = col.dataset.col;

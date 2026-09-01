@@ -7,7 +7,7 @@ export const ADAPTERS = [LocalAdapter, GasAdapter];
 export function createAdapter(settings) {
   const Cls = ADAPTERS.find((a) => a.id === settings.adapter) || LocalAdapter;
   return Cls === GasAdapter
-    ? new GasAdapter({ endpoint: settings.gasEndpoint, token: settings.gasToken, session: settings.authSession })
+    ? new GasAdapter({ endpoint: settings.gasEndpoint, session: settings.authSession })
     : new LocalAdapter({ namespace: settings.namespace });
 }
 

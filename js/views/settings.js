@@ -36,10 +36,7 @@ export default {
             <label class="field gas-only" ${gas ? '' : 'hidden'}>
               <span>Apps Script 웹앱 URL</span>
               <input name="gasEndpoint" value="${settings.gasEndpoint}" placeholder="https://script.google.com/macros/s/.../exec" />
-            </label>
-            <label class="field gas-only" ${gas ? '' : 'hidden'}>
-              <span>공유 토큰</span>
-              <input name="gasToken" value="${settings.gasToken}" placeholder="Code.gs의 SHARED_TOKEN과 동일하게" />
+              <small>기본값은 <span class="mono">js/config.js</span> 에 있습니다. 다른 배포본으로 시험할 때만 바꾸세요.</small>
             </label>
             <div class="row">
               <button type="submit" class="btn btn-primary">연결 적용</button>
@@ -48,6 +45,7 @@ export default {
           </form>
           <p class="muted" style="margin-top:12px;font-size:12.5px">
             Apps Script 백엔드 코드는 <span class="mono">apps-script/Code.gs</span> 에 포함되어 있습니다.
+            인증은 로그인 세션으로 하며, 관리자 설정 키(SHARED_TOKEN)는 최초 관리자 생성 때만 입력합니다.
           </p>
           <!-- 어댑터 전환 폼을 다시 제출하지 않고 즉시 저장하기 위해 form 바깥에 둔다. -->
           <label class="field" style="margin-top:14px;max-width:220px">
