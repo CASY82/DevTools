@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="GameDev Hub · Task + Asset + Git 통합 협업 허브" />
+<title>GameDev Hub</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🎮</text></svg>" />
+<link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+<div class="auth-shell" id="auth-shell"></div>
+<div class="app" id="app" hidden>
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">GH</span>
+      <div>
+        <strong>GameDev Hub</strong>
+        <small>Task · Asset · Git</small>
+      </div>
+    </div>
+
+    <label class="field project-picker">
+      <span>프로젝트</span>
+      <select id="project-picker" aria-label="프로젝트 선택"></select>
+    </label>
+
+    <nav class="nav" id="nav">
+      <a href="#/dashboard" data-route="dashboard"><i data-icon="grid"></i>대시보드</a>
+      <a href="#/board" data-route="board"><i data-icon="board"></i>보드</a>
+      <a href="#/tasks" data-route="tasks"><i data-icon="list"></i>태스크</a>
+      <a href="#/assets" data-route="assets"><i data-icon="box"></i>에셋</a>
+      <a href="#/git" data-route="git"><i data-icon="git"></i>Git 연동</a>
+      <a href="#/feed" data-route="feed"><i data-icon="feed"></i>변경 피드</a>
+      <a href="#/settings" data-route="settings"><i data-icon="gear"></i>설정</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="storage-chip" id="storage-chip" title="현재 저장소 어댑터"></div>
+      <a class="plan-link" href="../gamedev_hub_development_plan.html">개발 계획서 보기</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="crumbs" id="crumbs"></div>
+      <div class="topbar-actions">
+        <span id="sync-status" class="sync-status"></span>
+        <button id="sync-btn" class="btn btn-sm" type="button" title="저장소에서 최신 데이터를 다시 읽습니다">다시 불러오기</button>
+        <input id="global-search" class="search" type="search" placeholder="검색 (태스크 / 에셋)" aria-label="검색" />
+        <select id="actor-picker" class="actor" aria-label="현재 사용자"></select>
+        <button id="logout-btn" class="btn btn-sm" type="button">로그아웃</button>
+      </div>
+    </header>
+    <div class="view" id="view" aria-live="polite"></div>
+  </main>
+</div>
+
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+<div id="modal-root" class="modal-root" hidden></div>
+
+<noscript><p style="padding:24px">이 애플리케이션은 JavaScript가 필요합니다.</p></noscript>
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>
